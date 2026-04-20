@@ -57,7 +57,7 @@ pub struct Absensi {
 ## 🖼️ Testnet Screenshots
 
 ### Contract Explorer — `get_absensi`
-![Contract Explorer showing get_absensi invocation](./screenshots/get_absensi.png)
+![Contract Explorer showing get_absensi invocation](testnet.png)
 
 > Invoking `get_absensi` via Stellar Lab. The contract returns an empty `vec` when no attendance records have been submitted yet.
 
