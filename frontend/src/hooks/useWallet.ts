@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { isConnected, getAddress, signTransaction } from '@stellar/freighter-api'
+import { useState, useCallback, useMemo } from 'react'
+import { requestAccess, signTransaction } from '@stellar/freighter-api'
 import {
   BASE_FEE,
   TransactionBuilder,
@@ -41,16 +41,14 @@ export function useWallet() {
   const connect = useCallback(async () => {
     setState((s) => ({ ...s, connecting: true, error: null }))
     try {
-      const connectedResult = await isConnected()
-      if (!connectedResult.isConnected) throw new Error('Freighter not installed or locked')
-
-      const addressResult = await getAddress()
-      if (!addressResult.address) throw new Error('Failed to get address')
-      const publicKey = addressResult.address
-      const balance = await fetchBalance(publicKey)
+      const { address, error } = await requestAccess()
+      if (error || !address) {
+        throw new Error(error?.message || 'Failed to get address — is Freighter unlocked?')
+      }
+      const balance = await fetchBalance(address)
 
       setState({
-        address: publicKey,
+        address,
         balance,
         connecting: false,
         error: null,
@@ -120,5 +118,8 @@ export function useWallet() {
     [state.address]
   )
 
-  return { ...state, connect, disconnect, refreshBalance, signAndSendXlmPayment }
+  return useMemo(
+    () => ({ ...state, connect, disconnect, refreshBalance, signAndSendXlmPayment }),
+    [state, connect, disconnect, refreshBalance, signAndSendXlmPayment]
+  )
 }

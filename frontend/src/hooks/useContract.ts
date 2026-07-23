@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { signTransaction } from '@stellar/freighter-api'
 import {
   SorobanRpc,
@@ -247,12 +247,15 @@ export function useContract(address: string | null) {
     [callContract]
   )
 
-  return {
-    loading,
-    error,
-    getStudents,
-    getAttendance,
-    createStudent,
-    createAttendance,
-  }
+  return useMemo(
+    () => ({
+      loading,
+      error,
+      getStudents,
+      getAttendance,
+      createStudent,
+      createAttendance,
+    }),
+    [loading, error, getStudents, getAttendance, createStudent, createAttendance]
+  )
 }
