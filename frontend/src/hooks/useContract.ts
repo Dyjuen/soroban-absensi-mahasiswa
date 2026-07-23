@@ -1,10 +1,12 @@
 import { useCallback, useState } from 'react'
 import { signTransaction } from '@stellar/freighter-api'
 import {
+  SorobanRpc,
   TransactionBuilder,
-  Account,
+  Transaction,
   BASE_FEE,
   nativeToScVal,
+  scValToNative,
   xdr,
   Operation,
 } from '@stellar/stellar-sdk'
@@ -35,38 +37,6 @@ function u64Val(n: number): xdr.ScVal {
   return nativeToScVal(n, { type: 'u64' })
 }
 
-async function simulateContract(
-  method: string,
-  args: xdr.ScVal[],
-  source: string
-): Promise<any> {
-  const body = {
-    jsonrpc: '2.0',
-    id: 1,
-    method: 'simulateTransaction',
-    params: [
-      {
-        source,
-        operations: [
-          {
-            function: 'invokeContractFunction',
-            contractId: CONTRACT_ID,
-            method,
-            args,
-          },
-        ],
-      },
-    ],
-  }
-
-  const resp = await fetch(RPC_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  return resp.json()
-}
-
 export function useContract(address: string | null) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -76,16 +46,12 @@ export function useContract(address: string | null) {
       if (!address) throw new Error('Wallet not connected')
       setLoading(true)
       setError(null)
+
       try {
-        const sim = await simulateContract(method, args, address)
-        const txData = sim.result?.transactionData
-        if (!txData) throw new Error(`Simulation failed: ${JSON.stringify(sim)}`)
+        const server = new SorobanRpc.Server(RPC_URL)
+        const account = await server.getAccount(address)
 
-        const serverResp = await fetch(`${RPC_URL}/accounts/${address}`)
-        const accountData = await serverResp.json()
-
-        const source = new Account(address, accountData.sequence.toString())
-        const tx = new TransactionBuilder(source, {
+        const tx = new TransactionBuilder(account, {
           fee: BASE_FEE,
           networkPassphrase: NETWORK_PASSPHRASE,
         })
@@ -99,27 +65,29 @@ export function useContract(address: string | null) {
           .setTimeout(300)
           .build()
 
-        const signedXdr = await signTransaction(tx.toXDR(), {
-          networkPassphrase: NETWORK_PASSPHRASE,
-        })
+        const preparedTx = await server.prepareTransaction(tx)
 
-        const submitResp = await fetch(`${RPC_URL}/transactions`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tx: signedXdr }),
-        })
-        const result = await submitResp.json()
+        const signed = await signTransaction(
+          preparedTx.toXDR(),
+          {
+            networkPassphrase: NETWORK_PASSPHRASE,
+          }
+        )
 
-        if (
-          result.status === 'FAILED' ||
-          (result.result && result.result.status === 'FAILED')
-        ) {
-          throw new Error('Contract invocation failed')
+        const signedTx = new Transaction(signed.signedTxXdr, NETWORK_PASSPHRASE)
+
+        const sendResult = await server.sendTransaction(signedTx)
+
+        if (sendResult.status === 'ERROR') {
+          throw new Error(
+            `Contract invocation failed: ${sendResult.errorResult || sendResult.status}`
+          )
         }
 
-        return result
+        return sendResult
       } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : 'Contract call failed'
+        const message =
+          err instanceof Error ? err.message : 'Contract call failed'
         setError(message)
         throw err
       } finally {
@@ -132,14 +100,37 @@ export function useContract(address: string | null) {
   const getStudents = useCallback(async (): Promise<Mahasiswa[]> => {
     if (!address) return []
     try {
-      const sim = await simulateContract('get_mahasiswa', [], address)
-      const raw = sim.result?.results?.[0]?.value
-      if (!raw) return []
-      return (raw as any[]).map((m: any) => ({
-        nim: m.nim,
-        nama: m.nama,
-        tahun: m.tahun,
-        kelas: m.kelas,
+      const server = new SorobanRpc.Server(RPC_URL)
+      const account = await server.getAccount(address)
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.invokeContractFunction({
+            contract: CONTRACT_ID,
+            function: 'get_mahasiswa',
+            args: [],
+          })
+        )
+        .setTimeout(300)
+        .build()
+
+      const simResult = await server.simulateTransaction(tx)
+
+      if ('error' in simResult || !simResult.result?.retval) {
+        return []
+      }
+
+      const raw = scValToNative(simResult.result.retval)
+      if (!raw || !Array.isArray(raw)) return []
+
+      return raw.map((item: any) => ({
+        nim: Number(item.nim),
+        nama: String(item.nama),
+        tahun: String(item.tahun),
+        kelas: String(item.kelas),
       }))
     } catch {
       return []
