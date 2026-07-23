@@ -33,9 +33,10 @@ export default function App() {
     else setStudents([])
   }, [wallet.address])
 
-  const handleRegisterStudent = async (nama: string, tahun: string, kelas: string) => {
-    await createStudent(nama, tahun, kelas)
+  const handleRegisterStudent = async (nama: string, tahun: string, kelas: string): Promise<string> => {
+    const hash = await createStudent(nama, tahun, kelas)
     await refreshStudents()
+    return hash
   }
 
   const handleCreateAttendance = async (

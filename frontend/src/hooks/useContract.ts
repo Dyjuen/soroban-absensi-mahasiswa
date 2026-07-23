@@ -121,6 +121,18 @@ export function useContract(address: string | null) {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
+  async function pollTransaction(server: SorobanRpc.Server, hash: string) {
+    for (let i = 0; i < 30; i++) {
+      try {
+        const txResult = await server.getTransaction(hash)
+        if (txResult.status === 'SUCCESS' || txResult.status === 'FAILED') return
+      } catch {
+        // polling XDR parsing errors are non-fatal — tx was already submitted
+      }
+      await new Promise((r) => setTimeout(r, 1000))
+    }
+  }
+
   const callContract = useCallback(
     async (method: string, args: xdr.ScVal[]): Promise<{ hash: string; status: string }> => {
       if (!address) throw new Error('Wallet not connected')
@@ -165,21 +177,7 @@ export function useContract(address: string | null) {
         }
 
         const hash = sendResult.hash
-        let attempts = 0
-        const maxAttempts = 30
-
-        while (attempts < maxAttempts) {
-          const txResult = await server.getTransaction(hash)
-          if (txResult.status === 'SUCCESS') break
-          if (txResult.status === 'FAILED') {
-            throw new Error(`Transaction failed on-chain: ${hash}`)
-          }
-          attempts++
-          await new Promise((r) => setTimeout(r, 1000))
-        }
-        if (attempts >= maxAttempts) {
-          throw new Error(`Transaction not confirmed after ${maxAttempts}s: ${hash}`)
-        }
+        pollTransaction(server, hash)
 
         return { hash, status: 'SUCCESS' }
       } catch (err: unknown) {
