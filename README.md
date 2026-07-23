@@ -1,99 +1,76 @@
-# 📋 Absensi Mahasiswa — Soroban Smart Contract
+# Absensi Mahasiswa — Soroban Smart Contract + React dApp
 
-A decentralized student attendance management system built on the **Stellar blockchain** using **Soroban smart contracts** (Rust). This contract allows institutions to register students and record their attendance data immutably on-chain.
+A decentralized student attendance management system built on the **Stellar blockchain** using **Soroban smart contracts** (Rust), with a **React + Vite** frontend dApp that connects via **Freighter Wallet**.
+
+Register students and record attendance immutably on-chain — each attendance requires a configurable XLM transfer to the deployer address as a verification fee.
 
 ---
 
-## 🚀 Features
+## Smart Contract
 
-| Feature | Description |
+### Features
+
+| Function | Description |
 |---|---|
-| `get_mahasiswa` | Retrieve all registered student records from contract storage |
-| `create_mahasiswa` | Register a new student with NIM, name, academic year, and class |
-| `delete_mahasiswa` | Remove a student record by NIM |
-| `get_absensi` | Retrieve all attendance records from contract storage |
-| `create_absensi` | Record a new attendance entry linked to a registered student (by NIM), including device name, location, datetime, subject, and status |
+| `get_mahasiswa` | Retrieve all registered students |
+| `create_mahasiswa` | Register a new student (name, year, class) |
+| `delete_mahasiswa` | Remove a student by NIM |
+| `get_absensi` | Retrieve all attendance records |
+| `create_absensi` | Record attendance linked to a student (NIM, device, location, datetime, subject, status) |
 
----
+### Data Structures
 
-## 🏗️ Data Structures
-
-### `Mahasiswa` (Student)
 ```rust
 pub struct Mahasiswa {
-    pub nim: u64,       // Student ID (auto-generated)
-    pub nama: String,   // Full name
-    pub tahun: String,  // Academic year (e.g. "2024")
-    pub kelas: String,  // Class (e.g. "IF-A")
+    pub nim: u64,       // auto-generated
+    pub nama: String,
+    pub tahun: String,  // e.g. "2024"
+    pub kelas: String,  // e.g. "IF-A"
 }
-```
 
-### `Absensi` (Attendance)
-```rust
 pub struct Absensi {
-    pub id: u64,                  // Attendance ID (auto-generated)
-    pub mahasiswa: Mahasiswa,     // Linked student data
-    pub device_name: String,      // Device used for check-in
-    pub location: String,         // Physical location
-    pub datetime: String,         // Date and time of attendance
-    pub subject: String,          // Subject / course name
-    pub status: String,           // e.g. "Hadir", "Izin", "Alpa"
+    pub id: u64,
+    pub mahasiswa: Mahasiswa,
+    pub device_name: String,
+    pub location: String,
+    pub datetime: String,
+    pub subject: String,
+    pub status: String,  // "Hadir", "Izin", "Sakit", "Alpa"
 }
 ```
 
----
-
-## 🌐 Testnet Deployment
+### Testnet Deployment
 
 | Property | Value |
 |---|---|
 | **Network** | Stellar Testnet |
-| **Contract ID** | `CCNMB2M7UARGN6AETTJXS6RARYUKGRA34XQE6GLRFVV2ZRZFCL3MT6NO` |
-| **Deployer Address** | `GBVICMQAR6IG6MKUGRLWQUJDDZUANGPK6QKZK2NF4JFJNCCOLY7E7CXB` |
-| **Explorer** | [Stellar Lab Contract Explorer](https://lab.stellar.org/contract-explorer) |
+| **Contract ID** | `CBAMBILE2GHTSOMB7LX3YMBR2ZVW2G76QNZK375QFAICVGTUGAWDGCFW` |
+| **Deployer Address** | `GA5FHXZRASYTNPWAT3MJKX232ZG7NSQKQHVJQUX6V7SPWBPDUM2PQH6I` |
+| **RPC URL** | `https://soroban-testnet.stellar.org` |
+| **Explorer** | [Stellar Lab](https://lab.stellar.org/contract-explorer) |
 
----
+### Build & Test (Rust)
 
-## 🖼️ Testnet Screenshots
-
-### Contract Explorer — `get_absensi`
-![Contract Explorer showing get_absensi invocation](testnet.png)
-
-> Invoking `get_absensi` via Stellar Lab. The contract returns an empty `vec` when no attendance records have been submitted yet.
-
----
-
-## 🛠️ Getting Started
-
-### Prerequisites
-- [Rust](https://www.rust-lang.org/tools/install)
-- [Stellar CLI](https://developers.stellar.org/docs/tools/stellar-cli)
-- Soroban SDK (`soroban-sdk`)
-
-### Build
 ```bash
 cargo build --target wasm32-unknown-unknown --release
-```
-
-### Run Tests
-```bash
 cargo test
 ```
 
-### Deploy to Testnet
+### Deploy
+
 ```bash
 stellar contract deploy \
-  --wasm target/wasm32-unknown-unknown/release/absen_mahasiswa.wasm \
+  --wasm target/wasm32-unknown-unknown/release/notes.wasm \
   --network testnet \
   --source <YOUR_SECRET_KEY>
 ```
 
-### Invoke Contract (Examples)
+### Invoke via CLI
 
 **Register a student:**
 ```bash
 stellar contract invoke \
-  --id CCNMB2M7UARGN6AETTJXS6RARYUKGRA34XQE6GLRFVV2ZRZFCL3MT6NO \
+  --id CBAMBILE2GHTSOMB7LX3YMBR2ZVW2G76QNZK375QFAICVGTUGAWDGCFW \
   --network testnet \
   --source <YOUR_SECRET_KEY> \
   -- create_mahasiswa \
@@ -105,7 +82,7 @@ stellar contract invoke \
 **Get all students:**
 ```bash
 stellar contract invoke \
-  --id CCNMB2M7UARGN6AETTJXS6RARYUKGRA34XQE6GLRFVV2ZRZFCL3MT6NO \
+  --id CBAMBILE2GHTSOMB7LX3YMBR2ZVW2G76QNZK375QFAICVGTUGAWDGCFW \
   --network testnet \
   --source <YOUR_SECRET_KEY> \
   -- get_mahasiswa
@@ -114,24 +91,38 @@ stellar contract invoke \
 **Record attendance:**
 ```bash
 stellar contract invoke \
-  --id CCNMB2M7UARGN6AETTJXS6RARYUKGRA34XQE6GLRFVV2ZRZFCL3MT6NO \
+  --id CBAMBILE2GHTSOMB7LX3YMBR2ZVW2G76QNZK375QFAICVGTUGAWDGCFW \
   --network testnet \
   --source <YOUR_SECRET_KEY> \
   -- create_absensi \
-  --nim <NIM_VALUE> \
+  --nim 1 \
   --device_name "iPhone 15" \
-  --location "Gedung A Lantai 3" \
+  --location "Gedung A Lt.3" \
   --datetime "2025-01-20 08:00" \
   --subject "Basis Data" \
   --status "Hadir"
 ```
 
-## 🖥️ Frontend (React dApp)
+---
 
-A browser-based dApp that connects to Freighter wallet and interacts with the attendance contract on Stellar Testnet.
+## Frontend dApp
+
+A browser-based dApp that connects to Freighter wallet, displays XLM balance, and interacts with the attendance contract on Stellar Testnet. Built with **React 18**, **Vite**, **TypeScript**, **@stellar/stellar-sdk v12**, and **@stellar/freighter-api v3**.
+
+### Screenshots
+
+#### Wallet Connected & Balance Displayed
+![Wallet connected showing address and XLM balance](balance.png)
+
+#### Successful Testnet Transaction
+![Successful testnet transaction](testnettransaction.png)
+
+#### Transaction Result Shown to User
+![Transaction result feedback with hash](succesfull-transaction.png)
 
 ### Prerequisites
-- [Freighter Wallet](https://freighter.app/) browser extension
+
+- [Freighter Wallet](https://freighter.app/) browser extension (install, create account, switch to Testnet)
 - Node.js 18+
 
 ### Setup
@@ -150,58 +141,55 @@ npm run dev
 
 Open `http://localhost:5173` in your browser.
 
-### Connect & Use
+### Usage
 
-1. Install Freighter wallet extension
-2. Fund your wallet from the [Stellar Testnet Friendbot](https://laboratory.stellar.org/#account-creator?network=testnet)
-3. Open the app and click "Connect Freighter Wallet"
-4. Register a student with name, year, and class
-5. Record attendance — this sends configurable XLM to the deployer address and writes attendance on-chain
-6. Transaction feedback shows success/failure with the transaction hash
+1. Install **Freighter Wallet** and fund your wallet from the [Stellar Testnet Friendbot](https://laboratory.stellar.org/#account-creator?network=testnet)
+2. Open the app and click **Connect Freighter Wallet**
+3. Your wallet address and **XLM balance** appear on screen
+4. Register a student (name, year, class)
+5. Record attendance — fills all fields including a configurable **XLM amount** (default 0.1 XLM). Submitting sends XLM to the deployer address, then records attendance on-chain
+6. **Transaction feedback** shows success/failure with the transaction hash
 
 ### Features
 
 | Feature | Description |
 |---|---|
-| **Wallet Connect** | Freighter wallet integration |
-| **XLM Balance** | Real-time balance display |
+| **Wallet Connect** | Freighter wallet integration via `requestAccess()` |
+| **XLM Balance** | Real-time balance from Horizon |
 | **Student Registration** | Register new students on-chain |
-| **Attendance Recording** | Record attendance with XLM transfer |
-| **Transaction Feedback** | Success/failure state with tx hash |
+| **Attendance Recording** | Record attendance + XLM payment to deployer |
+| **Transaction Feedback** | Success/failure with tx hash and step-by-step log |
 
----
-
-## 📁 Project Structure
+### Project Structure
 
 ```
 .
 ├── contracts/
-│   └── notes/           # Soroban smart contract (Rust)
-├── frontend/             # React + Vite dApp
+│   └── notes/              # Soroban smart contract (Rust)
+├── frontend/
 │   └── src/
-│       ├── components/   # React components
+│       ├── components/
 │       │   ├── WalletConnector.tsx
 │       │   ├── BalanceDisplay.tsx
 │       │   ├── StudentForm.tsx
 │       │   ├── StudentList.tsx
 │       │   ├── AttendanceForm.tsx
 │       │   └── TransactionFeedback.tsx
-│       ├── hooks/        # React hooks
+│       ├── hooks/
 │       │   ├── useWallet.ts
 │       │   └── useContract.ts
-│       ├── config.ts     # Network & contract config
-│       ├── App.tsx       # Main app component
-│       ├── App.css       # Styles
-│       └── main.tsx      # Entry point
-├── screenshots/
-│   └── get_absensi.png
-├── Cargo.toml
-├── README.md
-└── testnet.png
+│       ├── config.ts
+│       ├── App.tsx
+│       ├── App.css
+│       └── main.tsx
+├── balance.png
+├── succesfull-transaction.png
+├── testnettransaction.png
+└── README.md
 ```
 
 ---
 
-## 📄 License
+## License
 
-MIT License — free to use, modify, and distribute.
+MIT
