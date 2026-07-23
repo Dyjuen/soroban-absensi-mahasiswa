@@ -126,19 +126,78 @@ stellar contract invoke \
   --status "Hadir"
 ```
 
+## 🖥️ Frontend (React dApp)
+
+A browser-based dApp that connects to Freighter wallet and interacts with the attendance contract on Stellar Testnet.
+
+### Prerequisites
+- [Freighter Wallet](https://freighter.app/) browser extension
+- Node.js 18+
+
+### Setup
+
+```bash
+cd frontend
+npm install
+```
+
+### Run
+
+```bash
+cd frontend
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### Connect & Use
+
+1. Install Freighter wallet extension
+2. Fund your wallet from the [Stellar Testnet Friendbot](https://laboratory.stellar.org/#account-creator?network=testnet)
+3. Open the app and click "Connect Freighter Wallet"
+4. Register a student with name, year, and class
+5. Record attendance — this sends configurable XLM to the deployer address and writes attendance on-chain
+6. Transaction feedback shows success/failure with the transaction hash
+
+### Features
+
+| Feature | Description |
+|---|---|
+| **Wallet Connect** | Freighter wallet integration |
+| **XLM Balance** | Real-time balance display |
+| **Student Registration** | Register new students on-chain |
+| **Attendance Recording** | Record attendance with XLM transfer |
+| **Transaction Feedback** | Success/failure state with tx hash |
+
 ---
 
 ## 📁 Project Structure
 
 ```
 .
-├── src/
-│   ├── lib.rs       # Main contract logic
-│   └── test.rs      # Unit tests
+├── contracts/
+│   └── notes/           # Soroban smart contract (Rust)
+├── frontend/             # React + Vite dApp
+│   └── src/
+│       ├── components/   # React components
+│       │   ├── WalletConnector.tsx
+│       │   ├── BalanceDisplay.tsx
+│       │   ├── StudentForm.tsx
+│       │   ├── StudentList.tsx
+│       │   ├── AttendanceForm.tsx
+│       │   └── TransactionFeedback.tsx
+│       ├── hooks/        # React hooks
+│       │   ├── useWallet.ts
+│       │   └── useContract.ts
+│       ├── config.ts     # Network & contract config
+│       ├── App.tsx       # Main app component
+│       ├── App.css       # Styles
+│       └── main.tsx      # Entry point
 ├── screenshots/
 │   └── get_absensi.png
 ├── Cargo.toml
-└── README.md
+├── README.md
+└── testnet.png
 ```
 
 ---
