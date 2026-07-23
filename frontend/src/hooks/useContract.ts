@@ -115,8 +115,6 @@ export function useContract(address: string | null) {
 
   const getStudents = useCallback(async (): Promise<Mahasiswa[]> => {
     if (!address) return []
-    setLoading(true)
-    setError(null)
     try {
       const server = new SorobanRpc.Server(RPC_URL)
       const account = await server.getAccount(address)
@@ -150,19 +148,13 @@ export function useContract(address: string | null) {
         tahun: String(item.tahun),
         kelas: String(item.kelas),
       }))
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch students'
-      setError(message)
+    } catch {
       return []
-    } finally {
-      setLoading(false)
     }
   }, [address])
 
   const getAttendance = useCallback(async (): Promise<Absensi[]> => {
     if (!address) return []
-    setLoading(true)
-    setError(null)
     try {
       const server = new SorobanRpc.Server(RPC_URL)
       const account = await server.getAccount(address)
@@ -204,12 +196,8 @@ export function useContract(address: string | null) {
         subject: String(item.subject),
         status: String(item.status),
       }))
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch attendance'
-      setError(message)
+    } catch {
       return []
-    } finally {
-      setLoading(false)
     }
   }, [address])
 
