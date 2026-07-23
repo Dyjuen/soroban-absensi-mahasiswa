@@ -4,3 +4,8 @@ dist/
 .env
 *.local
 graphify-out/
+
+# Rust
+target/
+**/*.rs.bk
+Cargo.lock
