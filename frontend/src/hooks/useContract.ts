@@ -115,6 +115,8 @@ export function useContract(address: string | null) {
 
   const getStudents = useCallback(async (): Promise<Mahasiswa[]> => {
     if (!address) return []
+    setLoading(true)
+    setError(null)
     try {
       const server = new SorobanRpc.Server(RPC_URL)
       const account = await server.getAccount(address)
@@ -148,8 +150,66 @@ export function useContract(address: string | null) {
         tahun: String(item.tahun),
         kelas: String(item.kelas),
       }))
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch students'
+      setError(message)
       return []
+    } finally {
+      setLoading(false)
+    }
+  }, [address])
+
+  const getAttendance = useCallback(async (): Promise<Absensi[]> => {
+    if (!address) return []
+    setLoading(true)
+    setError(null)
+    try {
+      const server = new SorobanRpc.Server(RPC_URL)
+      const account = await server.getAccount(address)
+
+      const tx = new TransactionBuilder(account, {
+        fee: BASE_FEE,
+        networkPassphrase: NETWORK_PASSPHRASE,
+      })
+        .addOperation(
+          Operation.invokeContractFunction({
+            contract: CONTRACT_ID,
+            function: 'get_absensi',
+            args: [],
+          })
+        )
+        .setTimeout(300)
+        .build()
+
+      const simResult = await server.simulateTransaction(tx)
+
+      if ('error' in simResult || !simResult.result?.retval) {
+        return []
+      }
+
+      const raw = scValToNative(simResult.result.retval)
+      if (!raw || !Array.isArray(raw)) return []
+
+      return raw.map((item: any) => ({
+        id: Number(item.id),
+        mahasiswa: {
+          nim: Number(item.mahasiswa.nim),
+          nama: String(item.mahasiswa.nama),
+          tahun: String(item.mahasiswa.tahun),
+          kelas: String(item.mahasiswa.kelas),
+        },
+        device_name: String(item.device_name),
+        location: String(item.location),
+        datetime: String(item.datetime),
+        subject: String(item.subject),
+        status: String(item.status),
+      }))
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Failed to fetch attendance'
+      setError(message)
+      return []
+    } finally {
+      setLoading(false)
     }
   }, [address])
 
@@ -191,6 +251,7 @@ export function useContract(address: string | null) {
     loading,
     error,
     getStudents,
+    getAttendance,
     createStudent,
     createAttendance,
   }
