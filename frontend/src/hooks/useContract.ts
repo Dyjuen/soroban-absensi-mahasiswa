@@ -42,7 +42,7 @@ export function useContract(address: string | null) {
   const [error, setError] = useState<string | null>(null)
 
   const callContract = useCallback(
-    async (method: string, args: xdr.ScVal[]): Promise<any> => {
+    async (method: string, args: xdr.ScVal[]): Promise<{ hash: string; status: string }> => {
       if (!address) throw new Error('Wallet not connected')
       setLoading(true)
       setError(null)
@@ -84,7 +84,23 @@ export function useContract(address: string | null) {
           )
         }
 
-        return sendResult
+        const hash = sendResult.hash
+        let attempts = 0
+        const maxAttempts = 30
+        while (attempts < maxAttempts) {
+          const txResult = await server.getTransaction(hash)
+          if (txResult.status === 'SUCCESS') break
+          if (txResult.status === 'FAILED') {
+            throw new Error(`Transaction failed on-chain: ${hash}`)
+          }
+          attempts++
+          await new Promise((r) => setTimeout(r, 1000))
+        }
+        if (attempts >= maxAttempts) {
+          throw new Error(`Transaction not confirmed after ${maxAttempts}s: ${hash}`)
+        }
+
+        return { hash, status: 'SUCCESS' }
       } catch (err: unknown) {
         const message =
           err instanceof Error ? err.message : 'Contract call failed'
@@ -144,7 +160,7 @@ export function useContract(address: string | null) {
         strVal(tahun),
         strVal(kelas),
       ])
-      return result.hash || result.id || ''
+      return result.hash
     },
     [callContract]
   )
@@ -166,7 +182,7 @@ export function useContract(address: string | null) {
         strVal(subject),
         strVal(status),
       ])
-      return result.hash || result.id || ''
+      return result.hash
     },
     [callContract]
   )
