@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from './hooks/useWallet'
-import { useContract } from './hooks/useContract'
+import { useContract, fetchStudents } from './hooks/useContract'
 import type { Mahasiswa } from './hooks/useContract'
 import WalletConnector from './components/WalletConnector'
 import BalanceDisplay from './components/BalanceDisplay'
@@ -11,7 +11,7 @@ import { DEPLOYER_ADDRESS } from './config'
 
 export default function App() {
   const wallet = useWallet()
-  const { getStudents, createStudent, createAttendance, loading: contractLoading } = useContract(wallet.address)
+  const { createStudent, createAttendance, loading: contractLoading } = useContract(wallet.address)
   const [students, setStudents] = useState<Mahasiswa[]>([])
   const [studentsLoading, setStudentsLoading] = useState(false)
 
@@ -19,19 +19,19 @@ export default function App() {
     if (!wallet.address) return
     setStudentsLoading(true)
     try {
-      const list = await getStudents()
+      const list = await fetchStudents(wallet.address)
       setStudents(list)
     } catch {
       // silent
     } finally {
       setStudentsLoading(false)
     }
-  }, [wallet.address, getStudents])
+  }, [wallet.address])
 
   useEffect(() => {
     if (wallet.address) refreshStudents()
     else setStudents([])
-  }, [wallet.address, refreshStudents])
+  }, [wallet.address])
 
   const handleRegisterStudent = async (nama: string, tahun: string, kelas: string) => {
     await createStudent(nama, tahun, kelas)
