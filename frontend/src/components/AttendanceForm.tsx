@@ -34,7 +34,7 @@ export default function AttendanceForm({
   const [nim, setNim] = useState('')
   const [deviceName, setDeviceName] = useState('')
   const [location, setLocation] = useState('')
-  const [datetime, setDatetime] = useState('')
+  const [datetime, setDatetime] = useState(() => new Date().toISOString().slice(0, 16))
   const [subject, setSubject] = useState('')
   const [status, setStatus] = useState('Hadir')
   const [xlmAmount, setXlmAmount] = useState('0.1')
@@ -89,8 +89,6 @@ export default function AttendanceForm({
     }
   }
 
-  const now = new Date().toISOString().slice(0, 16)
-
   return (
     <div className="card">
       <h2>Record Attendance</h2>
@@ -119,7 +117,7 @@ export default function AttendanceForm({
         <div className="form-row">
           <div className="form-group">
             <label>Date & Time</label>
-            <input type="datetime-local" value={datetime || now} onChange={(e) => setDatetime(e.target.value)} />
+            <input type="datetime-local" value={datetime} onChange={(e) => setDatetime(e.target.value)} />
           </div>
           <div className="form-group">
             <label>Subject</label>
