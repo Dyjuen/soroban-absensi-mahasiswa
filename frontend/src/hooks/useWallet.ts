@@ -7,7 +7,7 @@ import {
   Operation,
   Asset,
 } from '@stellar/stellar-sdk'
-import { HORIZON_URL, RPC_URL, NETWORK_PASSPHRASE } from '../config'
+import { HORIZON_URL, NETWORK_PASSPHRASE } from '../config'
 
 export interface WalletState {
   address: string | null
@@ -26,11 +26,11 @@ export function useWallet() {
 
   const fetchBalance = useCallback(async (publicKey: string) => {
     try {
-      const response = await fetch(`${RPC_URL}/accounts/${publicKey}`)
+      const response = await fetch(`${HORIZON_URL}/accounts/${publicKey}`)
       if (!response.ok) throw new Error('Failed to fetch balance')
       const data = await response.json()
       const balanceLine = data.balances?.find(
-        (b: any) => b.asset_type === 'native'
+        (b: { asset_type: string; balance: string }) => b.asset_type === 'native'
       )
       return balanceLine ? parseFloat(balanceLine.balance).toFixed(7) : '0'
     } catch {
@@ -55,11 +55,11 @@ export function useWallet() {
         connecting: false,
         error: null,
       })
-    } catch (err: any) {
+    } catch (err: unknown) {
       setState((s) => ({
         ...s,
         connecting: false,
-        error: err.message || 'Failed to connect wallet',
+        error: err instanceof Error ? err.message : 'Failed to connect wallet',
       }))
     }
   }, [fetchBalance])
@@ -111,7 +111,7 @@ export function useWallet() {
       })
       const submitData = await submitResp.json()
 
-      if (submitData.status === 'FAILED' || submitData.type === 'https://stellar.org/horizon-errors/transaction_failed') {
+      if (!submitData.successful) {
         throw new Error(`Transaction failed: ${submitData.result_xdr || 'unknown error'}`)
       }
 
