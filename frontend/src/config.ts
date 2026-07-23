@@ -1,0 +1,5 @@
+export const CONTRACT_ID = 'CCNMB2M7UARGN6AETTJXS6RARYUKGRA34XQE6GLRFVV2ZRZFCL3MT6NO'
+export const DEPLOYER_ADDRESS = 'GBVICMQAR6IG6MKUGRLWQUJDDZUANGPK6QKZK2NF4JFJNCCOLY7E7CXB'
+export const NETWORK_PASSPHRASE = 'Test SDF Network ; September 2015'
+export const RPC_URL = 'https://soroban-testnet.stellar.org'
+export const HORIZON_URL = 'https://horizon-testnet.stellar.org'
