@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useWallet } from './hooks/useWallet'
-import { useContract, Mahasiswa } from './hooks/useContract'
+import { useContract } from './hooks/useContract'
+import type { Mahasiswa } from './hooks/useContract'
 import WalletConnector from './components/WalletConnector'
 import BalanceDisplay from './components/BalanceDisplay'
 import StudentForm from './components/StudentForm'
@@ -10,7 +11,7 @@ import { DEPLOYER_ADDRESS } from './config'
 
 export default function App() {
   const wallet = useWallet()
-  const contract = useContract(wallet.address)
+  const { getStudents, createStudent, createAttendance, loading: contractLoading } = useContract(wallet.address)
   const [students, setStudents] = useState<Mahasiswa[]>([])
   const [studentsLoading, setStudentsLoading] = useState(false)
 
@@ -18,14 +19,14 @@ export default function App() {
     if (!wallet.address) return
     setStudentsLoading(true)
     try {
-      const list = await contract.getStudents()
+      const list = await getStudents()
       setStudents(list)
     } catch {
       // silent
     } finally {
       setStudentsLoading(false)
     }
-  }, [wallet.address, contract])
+  }, [wallet.address, getStudents])
 
   useEffect(() => {
     if (wallet.address) refreshStudents()
@@ -33,7 +34,7 @@ export default function App() {
   }, [wallet.address, refreshStudents])
 
   const handleRegisterStudent = async (nama: string, tahun: string, kelas: string) => {
-    await contract.createStudent(nama, tahun, kelas)
+    await createStudent(nama, tahun, kelas)
     await refreshStudents()
   }
 
@@ -45,7 +46,7 @@ export default function App() {
     subject: string,
     status: string
   ): Promise<string> => {
-    const hash = await contract.createAttendance(nim, device_name, location, datetime, subject, status)
+    const hash = await createAttendance(nim, device_name, location, datetime, subject, status)
     await wallet.refreshBalance()
     return hash
   }
@@ -73,12 +74,12 @@ export default function App() {
         <>
           <StudentForm
             onSubmit={handleRegisterStudent}
-            loading={contract.loading}
+            loading={contractLoading}
           />
           <StudentList students={students} loading={studentsLoading} />
           <AttendanceForm
             students={students}
-            contractLoading={contract.loading}
+            contractLoading={contractLoading}
             onCreateAttendance={handleCreateAttendance}
             onSendPayment={wallet.signAndSendXlmPayment}
             deployerAddress={DEPLOYER_ADDRESS}
