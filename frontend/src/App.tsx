@@ -1,5 +1,90 @@
-function App() {
-  return <h1>Absensi Mahasiswa — Stellar dApp</h1>
-}
+import { useState, useEffect, useCallback } from 'react'
+import { useWallet } from './hooks/useWallet'
+import { useContract, Mahasiswa } from './hooks/useContract'
+import WalletConnector from './components/WalletConnector'
+import BalanceDisplay from './components/BalanceDisplay'
+import StudentForm from './components/StudentForm'
+import StudentList from './components/StudentList'
+import AttendanceForm from './components/AttendanceForm'
+import { DEPLOYER_ADDRESS } from './config'
 
-export default App
+export default function App() {
+  const wallet = useWallet()
+  const contract = useContract(wallet.address)
+  const [students, setStudents] = useState<Mahasiswa[]>([])
+  const [studentsLoading, setStudentsLoading] = useState(false)
+
+  const refreshStudents = useCallback(async () => {
+    if (!wallet.address) return
+    setStudentsLoading(true)
+    try {
+      const list = await contract.getStudents()
+      setStudents(list)
+    } catch {
+      // silent
+    } finally {
+      setStudentsLoading(false)
+    }
+  }, [wallet.address, contract])
+
+  useEffect(() => {
+    if (wallet.address) refreshStudents()
+    else setStudents([])
+  }, [wallet.address, refreshStudents])
+
+  const handleRegisterStudent = async (nama: string, tahun: string, kelas: string) => {
+    await contract.createStudent(nama, tahun, kelas)
+    await refreshStudents()
+  }
+
+  const handleCreateAttendance = async (
+    nim: number,
+    device_name: string,
+    location: string,
+    datetime: string,
+    subject: string,
+    status: string
+  ): Promise<string> => {
+    const hash = await contract.createAttendance(nim, device_name, location, datetime, subject, status)
+    await wallet.refreshBalance()
+    return hash
+  }
+
+  return (
+    <div className="app">
+      <h1>Absensi Mahasiswa</h1>
+      <p style={{ color: '#6b7280', marginBottom: 20 }}>
+        Student Attendance dApp — Stellar Testnet
+      </p>
+
+      <div className="card">
+        <WalletConnector
+          address={wallet.address}
+          connecting={wallet.connecting}
+          error={wallet.error}
+          onConnect={wallet.connect}
+          onDisconnect={wallet.disconnect}
+        />
+      </div>
+
+      <BalanceDisplay balance={wallet.balance} address={wallet.address} />
+
+      {wallet.address && (
+        <>
+          <StudentForm
+            onSubmit={handleRegisterStudent}
+            loading={contract.loading}
+          />
+          <StudentList students={students} loading={studentsLoading} />
+          <AttendanceForm
+            students={students}
+            contractLoading={contract.loading}
+            onCreateAttendance={handleCreateAttendance}
+            onSendPayment={wallet.signAndSendXlmPayment}
+            deployerAddress={DEPLOYER_ADDRESS}
+          />
+        </>
+      )}
+    </div>
+  )
+}
